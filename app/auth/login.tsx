@@ -20,7 +20,7 @@ export default function LoginScreen() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      // Dummy action
+      router.replace('/(tabs)');
     }, 1500);
   };
 
