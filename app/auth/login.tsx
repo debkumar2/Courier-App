@@ -11,8 +11,8 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('john@gmail.com'); //arko
+  const [password, setPassword] = useState('1234'); //arko
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
