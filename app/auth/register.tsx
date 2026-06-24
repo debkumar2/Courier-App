@@ -7,6 +7,7 @@ import { AuthInput } from '../../components/auth/AuthInput';
 import { AuthButton } from '../../components/auth/AuthButton';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { buildApiUrl, getApiNetworkErrorMessage } from '@/lib/api';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function RegisterScreen() {
     setErrorMsg('');
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/register', {
+      const response = await fetch(buildApiUrl('/api/v1/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fullName: name, phone: mobile, email, password }),
@@ -39,7 +40,7 @@ export default function RegisterScreen() {
         setErrorMsg(data.message || 'Registration failed');
       }
     } catch (error) {
-      setErrorMsg('Network error. Please try again.');
+      setErrorMsg(getApiNetworkErrorMessage());
     } finally {
       setIsLoading(false);
     }

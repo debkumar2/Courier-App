@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet, Pressable, TextInputProps } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withTiming, FadeIn } from 'react-native-reanimated';
 
 export interface AuthInputProps extends TextInputProps {
   label: string;
@@ -37,12 +37,8 @@ export const AuthInput: React.FC<AuthInputProps> = ({
       error ? '#FF4C4C' : isFocused ? 'rgba(166,198,63,0.6)' : 'rgba(255,255,255,0.05)',
       { duration: 250 }
     );
-    
-    // Soft, diffused premium glow
-    const shadowOpacity = withTiming(
-      isFocused ? 0.8 : 0,
-      { duration: 300 }
-    );
+
+    const shadowOpacity = withTiming(isFocused ? 0.8 : 0, { duration: 300 });
 
     const backgroundColor = withTiming(
       isFocused ? 'rgba(10, 12, 10, 0.9)' : 'rgba(15, 18, 16, 0.4)',
@@ -58,27 +54,26 @@ export const AuthInput: React.FC<AuthInputProps> = ({
   }, [isFocused, error]);
 
   const labelStyle = useAnimatedStyle(() => {
-    const color = withTiming(
-      error ? '#FF4C4C' : isFocused ? '#A6C63F' : '#B7B7B7',
-      { duration: 250 }
-    );
+    const color = withTiming(error ? '#FF4C4C' : isFocused ? '#A6C63F' : '#B7B7B7', {
+      duration: 250,
+    });
     return { color };
   }, [isFocused, error]);
 
   return (
     <View style={styles.container}>
       <Animated.Text style={[styles.label, labelStyle]}>{label}</Animated.Text>
-      
+
       <Animated.View style={[styles.inputContainer, containerStyle]}>
         {icon && (
-          <Feather 
-            name={icon} 
-            size={20} 
-            color={isFocused ? '#A6C63F' : '#8B938B'} 
-            style={styles.icon} 
+          <Feather
+            name={icon}
+            size={20}
+            color={isFocused ? '#A6C63F' : '#8B938B'}
+            style={styles.icon}
           />
         )}
-        
+
         <TextInput
           style={[styles.input, { paddingLeft: icon ? 0 : 20 }]}
           placeholderTextColor="#5A635A"
@@ -89,22 +84,22 @@ export const AuthInput: React.FC<AuthInputProps> = ({
         />
 
         {isPassword && (
-          <Pressable 
+          <Pressable
             onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeIcon}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Feather 
-              name={showPassword ? 'eye-off' : 'eye'} 
-              size={20} 
-              color={isFocused ? '#A6C63F' : '#8B938B'} 
+            <Feather
+              name={showPassword ? 'eye-off' : 'eye'}
+              size={20}
+              color={isFocused ? '#A6C63F' : '#8B938B'}
             />
           </Pressable>
         )}
       </Animated.View>
 
       {error ? (
-        <Animated.Text entering={withTiming(1)} style={styles.errorText}>
+        <Animated.Text entering={FadeIn.duration(200)} style={styles.errorText}>
           {error}
         </Animated.Text>
       ) : null}

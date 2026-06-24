@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, TouchableOpacity, Image, Platform, Dimensions, useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -19,8 +20,23 @@ const BASE_COLORS = {
 
 export default function HomeDashboard() {
   const [activeTab, setActiveTab] = useState('tracking');
+  const [userName, setUserName] = useState('User');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem('userFullName');
+        if (storedName) {
+          setUserName(storedName);
+        }
+      } catch (error) {
+        console.error('Failed to load user name', error);
+      }
+    };
+    fetchUserName();
+  }, []);
 
   const COLORS = {
     ...BASE_COLORS,
@@ -43,8 +59,8 @@ export default function HomeDashboard() {
               style={styles.profileImage} 
             />
             <View>
-              <Text style={[styles.greeting, { color: COLORS.textMuted }]}>Good Morning 👋</Text>
-              <Text style={[styles.userName, { color: COLORS.text }]}>Arko</Text>
+              <Text style={[styles.greeting, { color: COLORS.textMuted }]}>Good Morning</Text>
+              <Text style={[styles.userName, { color: COLORS.text }]}>{userName} 👋</Text>
             </View>
           </View>
           <View style={styles.headerRight}>

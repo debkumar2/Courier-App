@@ -1,37 +1,59 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { AuthContainer } from '../../components/auth/AuthContainer';
-import { AuthInput } from '../../components/auth/AuthInput';
-import { AuthButton } from '../../components/auth/AuthButton';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { buildApiUrl, getApiNetworkErrorMessage } from '@/lib/api';
+import { AuthButton } from '../../components/auth/AuthButton';
+import { AuthContainer } from '../../components/auth/AuthContainer';
+import { AuthInput } from '../../components/auth/AuthInput';
 
-export default function ForgotPasswordScreen() {
+export default function ResetPasswordScreen() {
   const router = useRouter();
-  const [contact, setContact] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const { identifier, otp } = useLocalSearchParams<{ identifier: string; otp: string }>();
 
-  const handleSendOtp = async () => {
-    if (!contact) return;
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleResetPassword = async () => {
+    if (!identifier || !otp) {
+      setErrorMsg('Reset session expired. Please request a new code.');
+      return;
+    }
+
+    if (!password || !confirmPassword) {
+      setErrorMsg('Please fill in both password fields.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMsg('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
+      return;
+    }
+
     setErrorMsg('');
     setIsLoading(true);
 
     try {
-      const response = await fetch(buildApiUrl('/api/v1/auth/forgot-password'), {
+      const response = await fetch(buildApiUrl('/api/v1/auth/reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: contact }),
+        body: JSON.stringify({ identifier, otp, password }),
       });
       const data = await response.json();
 
-      if (response.ok && data.success !== false) {
-        router.push({ pathname: '/auth/otp-verification', params: { identifier: contact, purpose: 'PASSWORD_RESET' } });
+      if (response.ok && data.success) {
+        router.replace('/auth/login');
       } else {
-        router.push({ pathname: '/auth/otp-verification', params: { identifier: contact, purpose: 'PASSWORD_RESET' } });
+        setErrorMsg(data.message || 'Unable to reset password.');
       }
     } catch (error) {
       setErrorMsg(getApiNetworkErrorMessage());
@@ -48,30 +70,36 @@ export default function ForgotPasswordScreen() {
         </Pressable>
 
         <Text style={styles.brandText}>COURIERX</Text>
-        <Text style={styles.title}>Recovery</Text>
-        <Text style={styles.subtitle}>
-          Enter your email or mobile number linked to your account and we will send you a verification code.
-        </Text>
+        <Text style={styles.title}>Reset Password</Text>
+        <Text style={styles.subtitle}>Create a new password for your account.</Text>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.cardGlowWrapper}>
         <BlurView intensity={40} tint="dark" style={styles.glassCard}>
           <View style={styles.formContainer}>
             <AuthInput
-              label="EMAIL OR MOBILE NUMBER"
-              placeholder="Enter email or mobile"
-              icon="mail"
-              value={contact}
-              onChangeText={setContact}
-              keyboardType="email-address"
-              autoCapitalize="none"
+              label="NEW PASSWORD"
+              placeholder="Create a strong password"
+              icon="lock"
+              isPassword
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <AuthInput
+              label="CONFIRM PASSWORD"
+              placeholder="Re-enter your password"
+              icon="lock"
+              isPassword
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
             />
 
             {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
             <AuthButton
-              title="Send OTP"
-              onPress={handleSendOtp}
+              title="Reset Password"
+              onPress={handleResetPassword}
               isLoading={isLoading}
               style={styles.ctaBtn}
             />

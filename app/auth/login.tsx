@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { buildApiUrl, getApiNetworkErrorMessage } from '@/lib/api';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BlurView } from 'expo-blur';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { AuthButton } from '../../components/auth/AuthButton';
 import { AuthContainer } from '../../components/auth/AuthContainer';
 import { AuthInput } from '../../components/auth/AuthInput';
-import { AuthButton } from '../../components/auth/AuthButton';
 import { SocialButton } from '../../components/auth/SocialButton';
-import { BlurView } from 'expo-blur';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -25,25 +27,28 @@ export default function LoginScreen() {
     setErrorMsg('');
     setIsLoading(true);
     try {
-      // Use your local IP or backend URL here (10.0.2.2 for Android emulator, localhost for iOS simulator/Web)
-      const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+      const response = await fetch(buildApiUrl('/api/v1/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: email, password }),
       });
       const data = await response.json();
+      // console.log('Login Response Data:', JSON.stringify(data, null, 2));
       if (response.ok && data.success) {
+        // Extract the user's name dynamically based on backend response
+        const fullName = data.data?.user?.fullName || 'User';
+        await AsyncStorage.setItem('userFullName', fullName);
+
         // Success: Navigate to main app
-        router.replace('/'); // Adjust route as needed
+        router.replace('/(tabs)');
       } else {
         setErrorMsg(data.message || 'Login failed');
       }
     } catch (error) {
-      setErrorMsg('Network error. Please try again.');
+      setErrorMsg(getApiNetworkErrorMessage());
     } finally {
       setIsLoading(false);
-      router.replace('/(tabs)');
-    }, 1500);
+    }
   };
 
   return (

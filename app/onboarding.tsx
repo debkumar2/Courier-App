@@ -11,6 +11,8 @@ import Animated, {
   withRepeat,
   withDelay,
   Easing,
+  FadeIn,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
@@ -51,7 +53,7 @@ const ONBOARDING_DATA = [
       { icon: 'headphones', label: '24/7 Support' },
     ]
   }
-];
+] as const;
 
 const LayeredBackground = () => {
   const { width, height } = useWindowDimensions();
@@ -85,7 +87,7 @@ const Header = () => (
   </SafeAreaView>
 );
 
-const Pagination = ({ scrollX }: { scrollX: Animated.SharedValue<number> }) => {
+const Pagination = ({ scrollX }: { scrollX: SharedValue<number> }) => {
   const { width } = useWindowDimensions();
   return (
     <View style={styles.paginationContainer}>
@@ -102,16 +104,20 @@ const Pagination = ({ scrollX }: { scrollX: Animated.SharedValue<number> }) => {
   );
 };
 
-const PrimaryCTA = ({ onPress, text }: { onPress: () => void, text: string }) => {
+const PrimaryCTA = ({ onPress, text }: { onPress: () => void; text: string }) => {
   const scale = useSharedValue(1);
   const buttonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }]
+    transform: [{ scale: scale.value }],
   }));
 
   return (
     <Pressable
-      onPressIn={() => { scale.value = withTiming(0.96, { duration: 150 }); }}
-      onPressOut={() => { scale.value = withTiming(1, { duration: 150 }); }}
+      onPressIn={() => {
+        scale.value = withTiming(0.96, { duration: 150 });
+      }}
+      onPressOut={() => {
+        scale.value = withTiming(1, { duration: 150 });
+      }}
       onPress={onPress}
       style={{ width: '100%', marginTop: 24 }}
     >
@@ -177,7 +183,6 @@ export default function OnboardingScreen() {
         bounces={false}
       >
         {ONBOARDING_DATA.map((item, index) => {
-          // Slide animations
           const slideStyle = useAnimatedStyle(() => {
             const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
             const translateY = interpolate(scrollX.value, inputRange, [40, 0, 40], 'clamp');
@@ -185,21 +190,17 @@ export default function OnboardingScreen() {
             return { opacity, transform: [{ translateY }] };
           }, [width]);
 
-          // Hero floating animation
           const floatAnim = useSharedValue(0);
           useEffect(() => {
             floatAnim.value = withDelay(index * 200, withRepeat(withTiming(1, { duration: 4000, easing: Easing.inOut(Easing.sin) }), -1, true));
-          }, []);
+          }, [floatAnim, index]);
           const heroFloatStyle = useAnimatedStyle(() => ({
-            transform: [{ translateY: interpolate(floatAnim.value, [0, 1], [-12, 12]) }]
+            transform: [{ translateY: interpolate(floatAnim.value, [0, 1], [-12, 12]) }],
           }));
 
           return (
             <View style={[styles.slide, { width, height: '100%', paddingTop: Math.max(height * 0.1, 60) }]} key={item.id}>
-
-              {/* Hero Section */}
               <View style={[styles.heroSection, { height: Math.max(height * 0.35, 260) }]}>
-                {/* Ambient glow behind hero */}
                 <Animated.View style={[styles.ambientGlow, slideStyle]} />
 
                 <Animated.View style={[styles.heroGlassContainer, slideStyle, heroFloatStyle]}>
@@ -208,17 +209,15 @@ export default function OnboardingScreen() {
                     <Feather name={item.icon as any} size={110} color="#FFFFFF" style={styles.heroIconShadow} />
                   </BlurView>
 
-                  {/* Floating particles */}
-                  <Animated.View style={[styles.particle, { top: -10, right: 20, shadowColor: '#FF9F1C' }]}>
+                  <Animated.View entering={FadeIn.delay(index * 150)} style={[styles.particle, { top: -10, right: 20, shadowColor: '#FF9F1C' }]}>
                     <Feather name="box" size={28} color="#FF9F1C" />
                   </Animated.View>
-                  <Animated.View style={[styles.particle, { bottom: 10, left: 10, shadowColor: '#B4E33D' }]}>
+                  <Animated.View entering={FadeIn.delay(index * 150 + 100)} style={[styles.particle, { bottom: 10, left: 10, shadowColor: '#B4E33D' }]}>
                     <Feather name="map-pin" size={32} color="#B4E33D" />
                   </Animated.View>
                 </Animated.View>
               </View>
 
-              {/* Content Section */}
               <Animated.View style={[styles.contentSection, slideStyle]}>
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.description}>{item.description}</Text>
@@ -234,13 +233,11 @@ export default function OnboardingScreen() {
                   ))}
                 </View>
               </Animated.View>
-
             </View>
           );
         })}
       </Animated.ScrollView>
 
-      {/* Floating Bottom Card */}
       <View style={styles.bottomCardContainer} pointerEvents="box-none">
         <View style={[styles.bottomGlassCardWrapper, { maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
           <BlurView intensity={80} tint="dark" style={styles.bottomGlassCard}>

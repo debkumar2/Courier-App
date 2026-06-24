@@ -6,51 +6,58 @@ import { AuthContainer } from '../../components/auth/AuthContainer';
 import { OtpInput } from '../../components/auth/OtpInput';
 import { AuthButton } from '../../components/auth/AuthButton';
 import { BlurView } from 'expo-blur';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { buildApiUrl, getApiNetworkErrorMessage } from '@/lib/api';
 
 export default function OtpVerificationScreen() {
   const router = useRouter();
   const { identifier, purpose } = useLocalSearchParams<{ identifier: string; purpose: string }>();
-  
+
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [timer, setTimer] = useState(30);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
+
     if (timer > 0) {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [timer]);
 
   const handleVerify = async () => {
     if (!identifier || otp.length !== 6) return;
     setIsLoading(true);
     setErrorMsg('');
+
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/verify-otp', {
+      const response = await fetch(buildApiUrl('/api/v1/auth/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, otp, purpose: purpose || 'EMAIL_VERIFICATION' }),
       });
       const data = await response.json();
+
       if (response.ok && data.success) {
         if (purpose === 'PASSWORD_RESET') {
-          // Go to reset password screen with OTP
           router.push({ pathname: '/auth/reset-password', params: { identifier, otp } });
         } else {
-          // Normal verification success, send to login
           router.replace('/auth/login');
         }
       } else {
         setErrorMsg(data.message || 'Invalid OTP code');
       }
     } catch (error) {
-      setErrorMsg('Network error. Please try again.');
+      setErrorMsg(getApiNetworkErrorMessage());
     } finally {
       setIsLoading(false);
     }
@@ -61,20 +68,20 @@ export default function OtpVerificationScreen() {
     setOtp('');
     setErrorMsg('');
     if (!identifier) return;
+
     try {
-      await fetch('http://localhost:5000/api/v1/auth/resend-otp', {
+      await fetch(buildApiUrl('/api/v1/auth/resend-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, purpose: purpose || 'EMAIL_VERIFICATION' }),
       });
     } catch (error) {
-      console.error(error);
+      setErrorMsg(getApiNetworkErrorMessage());
     }
   };
 
-  // Helper to mask email or phone
   const maskContact = (contact?: string) => {
-    if (!contact) return "unknown";
+    if (!contact) return 'unknown';
     if (contact.includes('@')) {
       const [name, domain] = contact.split('@');
       return `${name.charAt(0)}***@${domain}`;
@@ -86,10 +93,7 @@ export default function OtpVerificationScreen() {
 
   return (
     <AuthContainer>
-      <Animated.View 
-        entering={FadeInDown.duration(800).delay(100)} 
-        style={styles.headerContainer}
-      >
+      <Animated.View entering={FadeInDown.duration(800).delay(100)} style={styles.headerContainer}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color="#FFFFFF" />
         </Pressable>
@@ -97,15 +101,12 @@ export default function OtpVerificationScreen() {
         <Text style={styles.brandText}>COURIERX</Text>
         <Text style={styles.title}>Verification</Text>
         <Text style={styles.subtitle}>
-          We have sent a verification code to{'\n'}
+          We have sent a verification code to{`\n`}
           <Text style={styles.highlightText}>{maskedContact}</Text>
         </Text>
       </Animated.View>
 
-      <Animated.View 
-        entering={FadeInDown.duration(800).delay(200)} 
-        style={styles.cardGlowWrapper}
-      >
+      <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.cardGlowWrapper}>
         <BlurView intensity={40} tint="dark" style={styles.glassCard}>
           <View style={styles.formContainer}>
             <Text style={styles.inputLabel}>ENTER OTP CODE</Text>
