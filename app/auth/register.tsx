@@ -16,13 +16,33 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = () => {
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleRegister = async () => {
+    if (!name || !mobile || !email || !password) {
+      setErrorMsg('Please fill in all fields');
+      return;
+    }
+    setErrorMsg('');
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:5000/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: name, phone: mobile, email, password }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        // Success: Go to OTP or Login
+        router.push({ pathname: '/auth/otp-verification', params: { identifier: email, purpose: 'EMAIL_VERIFICATION' } });
+      } else {
+        setErrorMsg(data.message || 'Registration failed');
+      }
+    } catch (error) {
+      setErrorMsg('Network error. Please try again.');
+    } finally {
       setIsLoading(false);
-      // Dummy action to go to OTP
-      router.push('/auth/otp-verification');
-    }, 1500);
+    }
   };
 
   const isPasswordValid = password.length >= 8;
@@ -91,6 +111,8 @@ export default function RegisterScreen() {
                 Minimum 8 characters
               </Text>
             </View>
+
+            {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
             <AuthButton
               title="Create Account"
@@ -197,5 +219,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#A6C63F',
     fontWeight: '700',
+  },
+  errorText: {
+    color: '#ff4d4f',
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });

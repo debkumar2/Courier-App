@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { AuthContainer } from '../../components/auth/AuthContainer';
 import { OtpInput } from '../../components/auth/OtpInput';
@@ -10,8 +10,11 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 export default function OtpVerificationScreen() {
   const router = useRouter();
+  const { identifier, purpose } = useLocalSearchParams<{ identifier: string; purpose: string }>();
+  
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [timer, setTimer] = useState(30);
 
   useEffect(() => {
@@ -24,20 +27,62 @@ export default function OtpVerificationScreen() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
+    if (!identifier || otp.length !== 6) return;
     setIsLoading(true);
-    setTimeout(() => {
+    setErrorMsg('');
+    try {
+      const response = await fetch('http://localhost:5000/api/v1/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, otp, purpose: purpose || 'EMAIL_VERIFICATION' }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        if (purpose === 'PASSWORD_RESET') {
+          // Go to reset password screen with OTP
+          router.push({ pathname: '/auth/reset-password', params: { identifier, otp } });
+        } else {
+          // Normal verification success, send to login
+          router.replace('/auth/login');
+        }
+      } else {
+        setErrorMsg(data.message || 'Invalid OTP code');
+      }
+    } catch (error) {
+      setErrorMsg('Network error. Please try again.');
+    } finally {
       setIsLoading(false);
-      // Dummy action for success
-    }, 1500);
+    }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     setTimer(30);
     setOtp('');
+    setErrorMsg('');
+    if (!identifier) return;
+    try {
+      await fetch('http://localhost:5000/api/v1/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, purpose: purpose || 'EMAIL_VERIFICATION' }),
+      });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const maskedContact = "j***@example.com";
+  // Helper to mask email or phone
+  const maskContact = (contact?: string) => {
+    if (!contact) return "unknown";
+    if (contact.includes('@')) {
+      const [name, domain] = contact.split('@');
+      return `${name.charAt(0)}***@${domain}`;
+    }
+    return `${contact.substring(0, 3)}***${contact.substring(contact.length - 2)}`;
+  };
+
+  const maskedContact = maskContact(identifier);
 
   return (
     <AuthContainer>
@@ -76,6 +121,8 @@ export default function OtpVerificationScreen() {
                 </Pressable>
               )}
             </View>
+
+            {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
             <AuthButton
               title="Verify Account"
@@ -193,5 +240,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#A6C63F',
     fontWeight: '800',
+  },
+  errorText: {
+    color: '#ff4d4f',
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });

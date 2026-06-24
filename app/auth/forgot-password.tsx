@@ -13,13 +13,27 @@ export default function ForgotPasswordScreen() {
   const [contact, setContact] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
+    if (!contact) return;
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:5000/api/v1/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: contact }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success !== false) { // Assuming success even if user not found for security
+        router.push({ pathname: '/auth/otp-verification', params: { identifier: contact, purpose: 'PASSWORD_RESET' } });
+      } else {
+        // Handle error (maybe show it, but for forgot password we often just act like it worked)
+        router.push({ pathname: '/auth/otp-verification', params: { identifier: contact, purpose: 'PASSWORD_RESET' } });
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
       setIsLoading(false);
-      // Dummy action to go to OTP
-      router.push('/auth/otp-verification');
-    }, 1500);
+    }
   };
 
   return (

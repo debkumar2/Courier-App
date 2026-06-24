@@ -11,17 +11,38 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('john@gmail.com'); //arko
-  const [password, setPassword] = useState('1234'); //arko
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setErrorMsg('Please enter both email and password');
+      return;
+    }
+    setErrorMsg('');
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      // Use your local IP or backend URL here (10.0.2.2 for Android emulator, localhost for iOS simulator/Web)
+      const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: email, password }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        // Success: Navigate to main app
+        router.replace('/'); // Adjust route as needed
+      } else {
+        setErrorMsg(data.message || 'Login failed');
+      }
+    } catch (error) {
+      setErrorMsg('Network error. Please try again.');
+    } finally {
       setIsLoading(false);
-      // Dummy action
-    }, 1500);
+    }
   };
 
   return (
@@ -71,6 +92,8 @@ export default function LoginScreen() {
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </Pressable>
             </View>
+
+            {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
             <AuthButton
               title="Sign In"
@@ -238,5 +261,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#A6C63F',
     fontWeight: '700',
+  },
+  errorText: {
+    color: '#ff4d4f',
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });
