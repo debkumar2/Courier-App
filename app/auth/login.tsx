@@ -42,13 +42,14 @@ export default function LoginScreen() {
       setErrorMsg('Network error. Please try again.');
     } finally {
       setIsLoading(false);
-    }
+      router.replace('/(tabs)');
+    }, 1500);
   };
 
   return (
     <AuthContainer>
-      <Animated.View 
-        entering={FadeInDown.duration(800).delay(100)} 
+      <Animated.View
+        entering={FadeInDown.duration(800).delay(100)}
         style={styles.headerContainer}
       >
         <Text style={styles.brandText}>COURIERX</Text>
@@ -56,8 +57,8 @@ export default function LoginScreen() {
         <Text style={styles.subtitle}>Enter your details to access your account</Text>
       </Animated.View>
 
-      <Animated.View 
-        entering={FadeInDown.duration(800).delay(200)} 
+      <Animated.View
+        entering={FadeInDown.duration(800).delay(200)}
         style={styles.cardGlowWrapper}
       >
         <BlurView intensity={40} tint="dark" style={styles.glassCard}>
@@ -113,8 +114,8 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.socialContainer}>
-          <SocialButton provider="google" onPress={() => {}} style={styles.socialBtn} />
-          <SocialButton provider="apple" onPress={() => {}} style={styles.socialBtn} />
+          <SocialButton provider="google" onPress={() => { }} style={styles.socialBtn} />
+          <SocialButton provider="apple" onPress={() => { }} style={styles.socialBtn} />
         </View>
       </Animated.View>
 
